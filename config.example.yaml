@@ -20,8 +20,16 @@ retry_left_step_px: 4
 # scroll_repeats: 2
 # scroll_focus: 滚动前先点一下小程序区域中心，确保焦点在小程序里（Windows 建议 true）
 # scroll_focus: true
+# scroll_focus_click: 滚动聚焦是否真的点击一下。默认建议 false，避免误触把已选 A 改成 C。
+# scroll_focus_click: false
+# scroll_focus_point: 聚焦点（相对 screen_region 的偏移坐标）。如果你页面右侧/上方更安全，可以指定一个。
+# scroll_focus_point: [380, 60]
 # scroll_fallback_pagedown: 滚动后内容没变化时，按一次 PageDown 兜底（Windows 建议 true）
 # scroll_fallback_pagedown: true
+
+# 翻页后处理：点击“下一页”检测到页面刷新后，先向上滚动一次再截图识别（减少停在中部漏题）
+# page_turn_scroll_up: true
+# page_turn_scroll_up_amount: 20   # 正数=向上（wheel clicks），不填则自动推导一个较小值
 
 # 可选：限定桌面微信小程序窗口区域，格式为 x, y, width, height。
 # 如果不填，脚本会截取全屏并通过 OCR 查找。

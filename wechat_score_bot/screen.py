@@ -60,19 +60,33 @@ class Screen:
             return
         self._pyautogui.click(*absolute)
 
-    def scroll(self, amount: int, region: Optional[Rect] = None, focus: bool = True) -> None:
+    def scroll(
+        self,
+        amount: int,
+        region: Optional[Rect] = None,
+        focus: bool = True,
+        focus_point: Optional[Point] = None,
+        focus_click: bool = False,
+    ) -> None:
         if self.dry_run:
             print(f"[dry-run] scroll {amount}")
             return
         x: Optional[int] = None
         y: Optional[int] = None
         if region:
-            x = region.x + region.width // 2
-            y = region.y + region.height // 2
+            if focus_point:
+                x = region.x + int(focus_point[0])
+                y = region.y + int(focus_point[1])
+            else:
+                x = region.x + region.width // 2
+                y = region.y + region.height // 2
             if focus:
                 # 确保滚动目标窗口/控件拥有焦点（Windows 上特别重要）
                 try:
-                    self._pyautogui.click(x, y)
+                    # 默认只移动鼠标，不点击，避免误触选项（例如把已选 A 点成 C）
+                    self._pyautogui.moveTo(x, y)
+                    if focus_click:
+                        self._pyautogui.click(x, y)
                 except Exception:
                     pass
 

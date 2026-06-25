@@ -41,7 +41,10 @@ BASE_SCROLL_AMOUNT = -24
 DEFAULT_SCROLL_MULTIPLIER = 10
 SCROLL_REPEATS = 1
 SCROLL_FOCUS = True
+# 默认不点击聚焦，避免误触选项（例如把已选 A 改成 C）
+SCROLL_FOCUS_CLICK = False
 SCROLL_FALLBACK_PAGEDOWN = True
+PAGE_TURN_SCROLL_UP = True
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
@@ -198,7 +201,9 @@ def build_config_text(region: tuple[int, int, int, int], scroll_amount: int) -> 
         scroll_amount: {scroll_amount}
         scroll_repeats: {SCROLL_REPEATS}
         scroll_focus: {"true" if SCROLL_FOCUS else "false"}
+        scroll_focus_click: {"true" if SCROLL_FOCUS_CLICK else "false"}
         scroll_fallback_pagedown: {"true" if SCROLL_FALLBACK_PAGEDOWN else "false"}
+        page_turn_scroll_up: {"true" if PAGE_TURN_SCROLL_UP else "false"}
         screen_region: [{region[0]}, {region[1]}, {region[2]}, {region[3]}]
         """
     )

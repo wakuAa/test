@@ -20,8 +20,17 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "scroll_repeats": 1,
     # 滚动前是否先点一下区域中心，确保焦点在小程序内（Windows 推荐开启）
     "scroll_focus": True,
+    # 滚动聚焦是否真的“点击一下”。默认 false，避免误触把已选 A 改成 C。
+    "scroll_focus_click": False,
+    # 滚动聚焦点（相对 screen_region 的偏移坐标）。如果不填，默认使用区域中心。
+    # 例：scroll_focus_point: [380, 60]
+    "scroll_focus_point": None,
     # 如果滚动后 OCR 内容没变化，是否用 PageDown 作为兜底
     "scroll_fallback_pagedown": True,
+    # 翻到下一页后，先向上滚动一次（把页面拉到更靠上的位置），再开始截图/识别
+    "page_turn_scroll_up": True,
+    # 翻页后的向上滚动幅度（wheel clicks，正数=向上）。不填则自动推导一个偏小的值。
+    "page_turn_scroll_up_amount": None,
     "screen_region": None,
 }
 
@@ -36,7 +45,11 @@ class BotConfig:
     scroll_amount: Optional[int] = None
     scroll_repeats: int = 1
     scroll_focus: bool = True
+    scroll_focus_click: bool = False
+    scroll_focus_point: Optional[List[int]] = None
     scroll_fallback_pagedown: bool = True
+    page_turn_scroll_up: bool = True
+    page_turn_scroll_up_amount: Optional[int] = None
     screen_region: Optional[Rect] = None
 
 
@@ -89,7 +102,13 @@ def load_config(path: Path) -> BotConfig:
         scroll_amount=None if raw.get("scroll_amount") in (None, "") else int(raw.get("scroll_amount")),
         scroll_repeats=max(1, int(raw.get("scroll_repeats", 1))),
         scroll_focus=bool(raw.get("scroll_focus", True)),
+        scroll_focus_click=bool(raw.get("scroll_focus_click", False)),
+        scroll_focus_point=raw.get("scroll_focus_point") if isinstance(raw.get("scroll_focus_point"), list) else None,
         scroll_fallback_pagedown=bool(raw.get("scroll_fallback_pagedown", True)),
+        page_turn_scroll_up=bool(raw.get("page_turn_scroll_up", True)),
+        page_turn_scroll_up_amount=None
+        if raw.get("page_turn_scroll_up_amount") in (None, "")
+        else int(raw.get("page_turn_scroll_up_amount")),
         screen_region=_as_region(raw.get("screen_region")),
     )
 

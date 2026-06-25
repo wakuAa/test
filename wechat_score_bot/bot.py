@@ -148,6 +148,7 @@ class WeChatScoreBot:
             if nav == "next":
                 next_button = self.find_required(items, ["下一页"])
                 self.click_and_wait_for_form(next_button.rect.center, "next page")
+                self.after_page_turn(page_index)
                 return False
 
             self.scroll_until_content_changes(image, items, page_index, scroll_index)
@@ -234,6 +235,29 @@ class WeChatScoreBot:
                     return
         raise BotError(f"Timed out waiting for form content after action: {label}")
 
+    def after_page_turn(self, page_index: int) -> None:
+        """
+        点击“下一页”并检测到页面刷新后做一次收尾动作：
+        先轻微向上滚动一次，再截图/识别，避免停在页面中部导致漏题或识别混乱。
+        """
+        if not self.config.page_turn_scroll_up:
+            return
+        image = self.screen.screenshot(self.region)
+        amount = self.page_turn_scroll_up_amount_for(image)
+        if amount <= 0:
+            return
+        print(f"[page {page_index}] after page turn: scroll up once (amount={amount})")
+        self.screen.scroll(
+            amount,
+            region=self.region,
+            focus=self.config.scroll_focus,
+            focus_point=self.scroll_focus_point(),
+            focus_click=False,
+        )
+        # 截图/识别一次作为新的起点
+        self.screen.sleep(POLL_INTERVAL_SECONDS)
+        self.capture_and_ocr(f"page-{page_index:03d}-after-next-page")
+
     def wait_for_text(self, keyword_groups: Sequence[Sequence[str]], label: str) -> None:
         for poll_index in range(PAGE_CHANGE_POLLS):
             self.screen.sleep(POLL_INTERVAL_SECONDS)
@@ -277,7 +301,13 @@ class WeChatScoreBot:
         )
 
         for repeat_index in range(max(1, self.config.scroll_repeats)):
-            self.screen.scroll(scroll_amount, region=self.region, focus=self.config.scroll_focus)
+            self.screen.scroll(
+                scroll_amount,
+                region=self.region,
+                focus=self.config.scroll_focus,
+                focus_point=self.scroll_focus_point(),
+                focus_click=self.config.scroll_focus_click,
+            )
             for poll_index in range(SCROLL_CHANGE_POLLS):
                 self.screen.sleep(POLL_INTERVAL_SECONDS)
                 new_image, new_items = self.capture_and_ocr(
@@ -299,10 +329,11 @@ class WeChatScoreBot:
         if self.config.scroll_fallback_pagedown:
             print(f"[page {page_index}] wheel scroll did not change OCR; trying PageDown fallback once")
             if self.region and self.config.scroll_focus:
+                # 默认只 moveTo 不 click（避免误触）
                 try:
-                    cx = self.region.x + self.region.width // 2
-                    cy = self.region.y + self.region.height // 2
-                    self.screen.click((cx, cy), region=None)
+                    focus = self.scroll_focus_point()
+                    if focus:
+                        self.screen.scroll(0, region=self.region, focus=True, focus_point=focus, focus_click=False)
                 except Exception:
                     pass
             self.screen.press("pagedown")
@@ -326,6 +357,25 @@ class WeChatScoreBot:
                 return True
         return False
 
+    def scroll_focus_point(self) -> Optional[Point]:
+        """
+        返回用于滚动聚焦的区域内相对坐标点 (x, y)。
+        为了减少误触选项，默认选在“区域右侧边缘偏内”的位置，而不是正中心。
+        """
+        if not self.region:
+            return None
+        if self.config.scroll_focus_point and len(self.config.scroll_focus_point) == 2:
+            try:
+                x = int(self.config.scroll_focus_point[0])
+                y = int(self.config.scroll_focus_point[1])
+                return (x, y)
+            except Exception:
+                pass
+        # 默认：靠右的中上位置（通常比中心更不容易压到选项圈）
+        x = max(10, self.region.width - 15)
+        y = max(10, min(self.region.height - 10, self.region.height // 3))
+        return (x, y)
+
     def scroll_amount_for(self, image: Image.Image) -> int:
         # 如果用户在配置里显式指定滚动幅度，则优先使用（Windows 下常需要调大）。
         if self.config.scroll_amount is not None:
@@ -337,6 +387,13 @@ class WeChatScoreBot:
         # 经验值：image.height 约 700~1000 时，wheel clicks 取 18~25 比较合适。
         base = max(18, min(36, image.height // 40))
         return -int(base)
+
+    def page_turn_scroll_up_amount_for(self, image: Image.Image) -> int:
+        if self.config.page_turn_scroll_up_amount is not None:
+            return int(self.config.page_turn_scroll_up_amount)
+        # 默认给一个“偏小的向上回拉”，避免把页面拉回上一页或拉太多导致视觉跳动
+        down = abs(self.scroll_amount_for(image))
+        return max(12, min(60, down // 4))
 
     @staticmethod
     def ocr_signature(items: Sequence[OcrItem]) -> Tuple[Tuple[str, int], ...]:
