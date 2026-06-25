@@ -34,6 +34,8 @@ cp config.example.yaml config.yaml
 
 配置里不需要填写等待时间或滚动距离。脚本会根据 OCR 识别结果继续流程：点击后等到识别到下一阶段文字，滚动后等到识别内容发生变化，再继续找 A 选项、“下一页”或“提交”。
 
+如果你发现页面“滚动太慢 / 只下滑一点点”（常见于 Windows），可以在 `config.yaml` 里打开滚动参数：`scroll_amount`、`scroll_repeats`，并保持 `scroll_focus: true`。
+
 如果全屏 OCR 容易识别到其它窗口，可以先校准小程序窗口区域：
 
 ```bash

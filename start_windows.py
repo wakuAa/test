@@ -11,6 +11,10 @@ TITLE_KEYWORDS = ["汝城县第二中学师德"]
 PAUSE_BEFORE_SUBMIT = True
 MAX_SELECT_RETRY = 10
 RETRY_LEFT_STEP_PX = 4
+SCROLL_AMOUNT = -24
+SCROLL_REPEATS = 1
+SCROLL_FOCUS = True
+SCROLL_FALLBACK_PAGEDOWN = True
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
@@ -142,6 +146,10 @@ def build_config_text(region: tuple[int, int, int, int]) -> str:
         pause_before_submit: {"true" if PAUSE_BEFORE_SUBMIT else "false"}
         max_select_retry: {MAX_SELECT_RETRY}
         retry_left_step_px: {RETRY_LEFT_STEP_PX}
+        scroll_amount: {SCROLL_AMOUNT}
+        scroll_repeats: {SCROLL_REPEATS}
+        scroll_focus: {"true" if SCROLL_FOCUS else "false"}
+        scroll_fallback_pagedown: {"true" if SCROLL_FALLBACK_PAGEDOWN else "false"}
         screen_region: [{region[0]}, {region[1]}, {region[2]}, {region[3]}]
         """
     )
@@ -177,4 +185,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

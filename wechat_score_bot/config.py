@@ -13,6 +13,15 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "pause_before_submit": True,
     "max_select_retry": 10,
     "retry_left_step_px": 4,
+    # 滚动相关：大部分情况下无需配置；如果 Windows 下“只下滑一点点”，可调大 scroll_amount 或 scroll_repeats。
+    # scroll_amount: PyAutoGUI 的 wheel clicks（负数=向下滚动）
+    "scroll_amount": None,
+    # 每次识别循环滚动几次（用于 Windows 滚动幅度太小的情况）
+    "scroll_repeats": 1,
+    # 滚动前是否先点一下区域中心，确保焦点在小程序内（Windows 推荐开启）
+    "scroll_focus": True,
+    # 如果滚动后 OCR 内容没变化，是否用 PageDown 作为兜底
+    "scroll_fallback_pagedown": True,
     "screen_region": None,
 }
 
@@ -24,6 +33,10 @@ class BotConfig:
     pause_before_submit: bool = True
     max_select_retry: int = 10
     retry_left_step_px: int = 4
+    scroll_amount: Optional[int] = None
+    scroll_repeats: int = 1
+    scroll_focus: bool = True
+    scroll_fallback_pagedown: bool = True
     screen_region: Optional[Rect] = None
 
 
@@ -73,6 +86,10 @@ def load_config(path: Path) -> BotConfig:
         pause_before_submit=bool(raw.get("pause_before_submit", True)),
         max_select_retry=int(raw.get("max_select_retry", 10)),
         retry_left_step_px=int(raw.get("retry_left_step_px", 4)),
+        scroll_amount=None if raw.get("scroll_amount") in (None, "") else int(raw.get("scroll_amount")),
+        scroll_repeats=max(1, int(raw.get("scroll_repeats", 1))),
+        scroll_focus=bool(raw.get("scroll_focus", True)),
+        scroll_fallback_pagedown=bool(raw.get("scroll_fallback_pagedown", True)),
         screen_region=_as_region(raw.get("screen_region")),
     )
 

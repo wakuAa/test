@@ -272,23 +272,69 @@ class WeChatScoreBot:
     ) -> None:
         before_signature = self.ocr_signature(items)
         scroll_amount = self.scroll_amount_for(image)
-        print(f"[page {page_index}] scrolling to find more content")
-        self.screen.scroll(scroll_amount)
-        for poll_index in range(SCROLL_CHANGE_POLLS):
-            self.screen.sleep(POLL_INTERVAL_SECONDS)
-            _, new_items = self.capture_and_ocr(
-                f"page-{page_index:03d}-scroll-{scroll_index:03d}-wait-{poll_index:02d}"
-            )
-            if self.ocr_signature(new_items) != before_signature:
-                return
+        print(
+            f"[page {page_index}] scrolling to find more content (amount={scroll_amount}, repeats={self.config.scroll_repeats})"
+        )
+
+        for repeat_index in range(max(1, self.config.scroll_repeats)):
+            self.screen.scroll(scroll_amount, region=self.region, focus=self.config.scroll_focus)
+            for poll_index in range(SCROLL_CHANGE_POLLS):
+                self.screen.sleep(POLL_INTERVAL_SECONDS)
+                new_image, new_items = self.capture_and_ocr(
+                    f"page-{page_index:03d}-scroll-{scroll_index:03d}-r{repeat_index}-wait-{poll_index:02d}"
+                )
+                # 目标：滚动到“出现未勾选题目”或“出现下一页/提交”。
+                # 1) 一旦出现导航按钮，立刻返回给主循环处理点击/停止
+                if self.detect_navigation(new_items):
+                    return
+                # 2) 一旦出现新的未勾选 A 选项，立刻返回给主循环去点击
+                if self.has_unselected_a_option(new_image, new_items):
+                    return
+                # 3) 内容发生变化也返回（避免过度滚动跳题）
+                if self.ocr_signature(new_items) != before_signature:
+                    return
+
+        # 如果滚动后页面内容无变化，通常是“焦点不在小程序里”或“滚动幅度太小”。
+        # 这里用 PageDown 做一次兜底（比 wheel 更稳定），但只做一次，避免跳过题目。
+        if self.config.scroll_fallback_pagedown:
+            print(f"[page {page_index}] wheel scroll did not change OCR; trying PageDown fallback once")
+            if self.region and self.config.scroll_focus:
+                try:
+                    cx = self.region.x + self.region.width // 2
+                    cy = self.region.y + self.region.height // 2
+                    self.screen.click((cx, cy), region=None)
+                except Exception:
+                    pass
+            self.screen.press("pagedown")
+            for poll_index in range(SCROLL_CHANGE_POLLS):
+                self.screen.sleep(POLL_INTERVAL_SECONDS)
+                new_image, new_items = self.capture_and_ocr(
+                    f"page-{page_index:03d}-scroll-{scroll_index:03d}-pagedown-wait-{poll_index:02d}"
+                )
+                if self.detect_navigation(new_items):
+                    return
+                if self.has_unselected_a_option(new_image, new_items):
+                    return
+                if self.ocr_signature(new_items) != before_signature:
+                    return
+
         print(f"[page {page_index}] scroll did not visibly change OCR content; continuing recognition loop")
+
+    def has_unselected_a_option(self, image: Image.Image, items: Sequence[OcrItem]) -> bool:
+        for _, point in find_a_options(items, image.height):
+            if not is_selected_near(image, point):
+                return True
+        return False
 
     @staticmethod
     def scroll_amount_for(image: Image.Image) -> int:
         # PyAutoGUI scroll uses wheel units rather than pixels. This derives a
         # page-sized wheel movement from the actual screenshot height, so users
         # do not need to tune a scroll distance.
-        return -max(5, min(12, image.height // 120))
+        # 旧公式在部分 Windows 机器上滚动太小，因此把默认滚动幅度整体调大一些。
+        # 经验值：image.height 约 700~1000 时，wheel clicks 取 18~25 比较合适。
+        base = max(18, min(36, image.height // 40))
+        return -int(base)
 
     @staticmethod
     def ocr_signature(items: Sequence[OcrItem]) -> Tuple[Tuple[str, int], ...]:

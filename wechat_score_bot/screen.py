@@ -32,11 +32,41 @@ class Screen:
             return
         self._pyautogui.click(*absolute)
 
-    def scroll(self, amount: int) -> None:
+    def scroll(self, amount: int, region: Optional[Rect] = None, focus: bool = True) -> None:
         if self.dry_run:
             print(f"[dry-run] scroll {amount}")
             return
-        self._pyautogui.scroll(amount)
+        x: Optional[int] = None
+        y: Optional[int] = None
+        if region:
+            x = region.x + region.width // 2
+            y = region.y + region.height // 2
+            if focus:
+                # 确保滚动目标窗口/控件拥有焦点（Windows 上特别重要）
+                try:
+                    self._pyautogui.click(x, y)
+                except Exception:
+                    pass
+
+        # pyautogui.scroll 在不同版本上参数可能不同：有的支持 (amount, x, y)，有的只支持 (amount)
+        try:
+            if x is not None and y is not None:
+                self._pyautogui.scroll(amount, x=x, y=y)
+            else:
+                self._pyautogui.scroll(amount)
+        except TypeError:
+            if x is not None and y is not None:
+                try:
+                    self._pyautogui.moveTo(x, y)
+                except Exception:
+                    pass
+            self._pyautogui.scroll(amount)
+
+    def press(self, key: str) -> None:
+        if self.dry_run:
+            print(f"[dry-run] press {key}")
+            return
+        self._pyautogui.press(key)
 
     def write_text(self, text: str) -> None:
         if self.dry_run:
