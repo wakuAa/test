@@ -1,0 +1,48 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build exe (PyInstaller)
+        run: |
+          pyinstaller --noconfirm --clean --onedir --name wechat_score_bot --collect-all rapidocr_onnxruntime --collect-all onnxruntime start_windows.py
+
+      - name: Pack zip
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          if (Test-Path release_windows_exe) { Remove-Item -Recurse -Force release_windows_exe }
+          New-Item -ItemType Directory -Path release_windows_exe | Out-Null
+          Copy-Item -Recurse -Force dist\wechat_score_bot release_windows_exe\wechat_score_bot
+          Copy-Item -Force run_windows.bat release_windows_exe\
+          Copy-Item -Force README_windows_exe.md release_windows_exe\
+          if (Test-Path wechat_score_bot_windows_exe.zip) { Remove-Item -Force wechat_score_bot_windows_exe.zip }
+          Compress-Archive -Path release_windows_exe\* -DestinationPath wechat_score_bot_windows_exe.zip -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wechat_score_bot_windows_exe
+          path: wechat_score_bot_windows_exe.zip
+

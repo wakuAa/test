@@ -1,0 +1,7 @@
+name: "刘凯夫"
+title_keywords:
+  - "汝城县第二中学师德"
+pause_before_submit: true
+max_select_retry: 10
+retry_left_step_px: 4
+screen_region: [1102, 85, 411, 773]

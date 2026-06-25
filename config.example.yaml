@@ -1,0 +1,17 @@
+# 复制为 config.yaml 后修改姓名。
+name: "刘凯夫"
+
+# 可写字符串或字符串数组。脚本会先用 OCR 校验当前页面标题/正文包含这些关键词。
+title_keywords:
+  - "汝城县第二中学师德"
+
+# 安全默认：永远不自动点击最后的“提交”按钮。
+pause_before_submit: true
+
+# A 选项点击后，如果检测不到选中态，会逐次向左偏移重试。
+max_select_retry: 10
+retry_left_step_px: 4
+
+# 可选：限定桌面微信小程序窗口区域，格式为 x, y, width, height。
+# 如果不填，脚本会截取全屏并通过 OCR 查找。
+# screen_region: [0, 0, 414, 780]

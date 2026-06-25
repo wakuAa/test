@@ -1,0 +1,10 @@
+.venv/
+.build-venv/
+__pycache__/
+*.pyc
+logs/
+config.yaml
+build/
+dist/
+release_windows_exe/
+wechat_score_bot_windows_exe.zip

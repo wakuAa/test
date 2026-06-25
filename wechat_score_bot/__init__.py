@@ -1,0 +1,5 @@
+"""Desktop WeChat mini-program scoring automation."""
+
+__all__ = ["__version__"]
+
+__version__ = "0.1.0"
