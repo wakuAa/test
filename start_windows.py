@@ -11,7 +11,10 @@ TITLE_KEYWORDS = ["汝城县第二中学师德"]
 PAUSE_BEFORE_SUBMIT = True
 MAX_SELECT_RETRY = 10
 RETRY_LEFT_STEP_PX = 4
-SCROLL_AMOUNT = -24
+
+# 滚动基础幅度（wheel clicks，负数=向下）。实际幅度 = 基础幅度 * 倍率
+BASE_SCROLL_AMOUNT = -24
+DEFAULT_SCROLL_MULTIPLIER = 10
 SCROLL_REPEATS = 1
 SCROLL_FOCUS = True
 SCROLL_FALLBACK_PAGEDOWN = True
@@ -136,7 +139,29 @@ def select_screen_region() -> tuple[int, int, int, int]:
     return region  # type: ignore[return-value]
 
 
-def build_config_text(region: tuple[int, int, int, int]) -> str:
+def prompt_scroll_multiplier(default_value: int = DEFAULT_SCROLL_MULTIPLIER) -> int:
+    """
+    让用户在框选后输入滚动倍率。倍率越大，滚动越快。
+    默认使用当前基础幅度的 10 倍（用户提出的诉求）。
+    """
+    try:
+        text = input(f"请输入滚动倍率（回车默认 {default_value}，建议 5~30）：").strip()
+    except EOFError:
+        text = ""
+    if not text:
+        return default_value
+    try:
+        value = int(text)
+    except ValueError:
+        print("[warn] 输入不是整数，将使用默认倍率。")
+        return default_value
+    if value <= 0:
+        print("[warn] 倍率必须为正数，将使用默认倍率。")
+        return default_value
+    return value
+
+
+def build_config_text(region: tuple[int, int, int, int], scroll_amount: int) -> str:
     keywords = "\n".join(f'  - "{keyword}"' for keyword in TITLE_KEYWORDS)
     return textwrap.dedent(
         f"""\
@@ -146,7 +171,7 @@ def build_config_text(region: tuple[int, int, int, int]) -> str:
         pause_before_submit: {"true" if PAUSE_BEFORE_SUBMIT else "false"}
         max_select_retry: {MAX_SELECT_RETRY}
         retry_left_step_px: {RETRY_LEFT_STEP_PX}
-        scroll_amount: {SCROLL_AMOUNT}
+        scroll_amount: {scroll_amount}
         scroll_repeats: {SCROLL_REPEATS}
         scroll_focus: {"true" if SCROLL_FOCUS else "false"}
         scroll_fallback_pagedown: {"true" if SCROLL_FALLBACK_PAGEDOWN else "false"}
@@ -155,7 +180,7 @@ def build_config_text(region: tuple[int, int, int, int]) -> str:
     )
 
 
-def write_runtime_config(region: tuple[int, int, int, int]) -> Path:
+def write_runtime_config(region: tuple[int, int, int, int], scroll_amount: int) -> Path:
     with tempfile.NamedTemporaryFile(
         mode="w",
         suffix=".yaml",
@@ -164,7 +189,7 @@ def write_runtime_config(region: tuple[int, int, int, int]) -> Path:
         delete=False,
         encoding="utf-8",
     ) as handle:
-        handle.write(build_config_text(region))
+        handle.write(build_config_text(region, scroll_amount))
         return Path(handle.name)
 
 
@@ -173,7 +198,11 @@ def main() -> int:
     region = select_screen_region()
     print(f"[ok] selected screen_region: {list(region)}")
 
-    config_path = write_runtime_config(region)
+    multiplier = prompt_scroll_multiplier()
+    scroll_amount = int(BASE_SCROLL_AMOUNT * multiplier)
+    print(f"[ok] scroll_amount={scroll_amount} (base={BASE_SCROLL_AMOUNT} * multiplier={multiplier})")
+
+    config_path = write_runtime_config(region, scroll_amount)
     print(f"[ok] generated runtime config: {config_path}")
 
     # 直接调用 main.py 的入口（exe 环境也能工作），避免再起子进程找 run.py/venv。

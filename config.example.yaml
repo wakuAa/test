@@ -14,6 +14,7 @@ retry_left_step_px: 4
 
 # 可选：滚动参数（一般不用改；如果 Windows 下“只下滑一点点”，再启用下面几项）
 # scroll_amount: wheel clicks（负数=向下）。值越大滚得越多。参考：-18、-24、-30
+# 如果你使用 Windows 免安装 exe：程序会在框选后提示你输入“滚动倍率”，底层就是在调这个值。
 # scroll_amount: -24
 # scroll_repeats: 每次识别循环滚动几次（例如 2 或 3）
 # scroll_repeats: 2

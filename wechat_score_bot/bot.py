@@ -326,8 +326,10 @@ class WeChatScoreBot:
                 return True
         return False
 
-    @staticmethod
-    def scroll_amount_for(image: Image.Image) -> int:
+    def scroll_amount_for(self, image: Image.Image) -> int:
+        # 如果用户在配置里显式指定滚动幅度，则优先使用（Windows 下常需要调大）。
+        if self.config.scroll_amount is not None:
+            return int(self.config.scroll_amount)
         # PyAutoGUI scroll uses wheel units rather than pixels. This derives a
         # page-sized wheel movement from the actual screenshot height, so users
         # do not need to tune a scroll distance.
