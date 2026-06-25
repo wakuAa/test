@@ -10,8 +10,36 @@ from PIL import Image
 from .models import Point, Rect
 
 
+def _enable_windows_dpi_awareness() -> None:
+    """
+    Windows 显示缩放（125%/150%）时，如果进程不是 DPI aware，
+    截图坐标与鼠标坐标会出现倍率偏差，导致“点不准/滚不动/框选偏移”。
+    这里尽量把进程设为 DPI aware，提升 pyautogui 与截图坐标一致性。
+    """
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes  # noqa: WPS433 (stdlib)
+
+        # Windows 8.1+：PER_MONITOR_AWARE = 2
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)
+            return
+        except Exception:
+            pass
+
+        # Windows 7/旧环境兜底
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
 class Screen:
     def __init__(self, dry_run: bool = False) -> None:
+        _enable_windows_dpi_awareness()
         try:
             import pyautogui
         except ImportError as exc:

@@ -42,4 +42,5 @@ powershell -ExecutionPolicy Bypass -File .\tools\windows_exe\build_exe.ps1
 ## 常见问题
 
 - 首次启动会比较慢：因为 OCR / opencv / onnxruntime 依赖比较大，exe 包体积也会大（这是正常的）。
+- 如果对方显示器缩放是 125%/150%，出现“框选偏移、点击不准、滚动很怪”等现象：建议先用新版本（已做 DPI 适配）。如果仍异常，临时把 Windows 显示缩放改为 100% 再试一次。
 - 如果在某些机器上启动闪退：通常是杀毒/安全软件拦截或缺少系统运行库；把 `run_windows.log` 发我我再定位。

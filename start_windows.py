@@ -1,6 +1,30 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+def _enable_windows_dpi_awareness() -> None:
+    # 必须尽早调用：在 tkinter/pyautogui 等模块初始化前设置，才能避免 125% 缩放带来的坐标偏差。
+    try:
+        import sys
+
+        if sys.platform != "win32":
+            return
+        import ctypes
+
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)  # per-monitor DPI aware
+            return
+        except Exception:
+            pass
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
+_enable_windows_dpi_awareness()
+
 import sys
 import tempfile
 import textwrap
